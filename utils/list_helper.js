@@ -18,4 +18,54 @@ const favoriteBlog = (blogs) => {
   return blogs.find(blog => blog.likes === maxLikes);
 };
 
-module.exports = { dummy, totalLikes, favoriteBlog };
+const mostBlogs = (blogs) => {
+  // Let's create an empty array on which
+  // the bloggers are collected
+  let bloggers = [];
+
+  if (blogs.length === 0) {
+    return undefined;
+  }
+
+  blogs.forEach(blog => {
+    // adds a name of the blogger if it doesn't exist yet
+    if (!bloggers.includes(blog.author)) {
+      bloggers.push(blog.author);
+    }
+  });
+
+  // Let's create an array which includes the number of
+  // blogs with the author's name
+  let bloggersAndNumberOfBlogs = bloggers.map(blogger => {
+    // loops all blogs and counts the number of blogs
+    let numberOfblogs = 0;
+    blogs.forEach(blog => {
+      if (blog.author === blogger) {
+        numberOfblogs ++;
+      }
+    });
+
+    return { blogger: blogger, numberOfblogs };
+  });
+
+  // finds a blogger who has the most blogs
+  let maxBlogsAuthor = bloggersAndNumberOfBlogs[0];
+  bloggersAndNumberOfBlogs.forEach(blogger => {
+    if (blogger.numberOfblogs > maxBlogsAuthor.numberOfblogs) {
+      maxBlogsAuthor = blogger;
+    }
+  });
+
+  return {
+    author: maxBlogsAuthor.author,
+    blogs: maxBlogsAuthor.numberOfblogs
+  };
+};
+
+module.exports =
+{
+  dummy,
+  totalLikes,
+  favoriteBlog,
+  mostBlogs
+};
