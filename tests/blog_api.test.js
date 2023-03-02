@@ -20,3 +20,11 @@ test('there are two blogs', async () => {
 
   expect(response.body).toHaveLength(2);
 });
+
+test('the blog identifier field is called id', async () => {
+  const blogs = await api.get('/api/blogs');
+
+  const ids = blogs.body.map(blog => blog.id);
+
+  expect(ids).toBeDefined();
+});
