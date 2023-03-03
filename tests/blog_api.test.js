@@ -7,12 +7,13 @@ const Blog = require('../models/blog');
 
 beforeEach(async () => {
   await Blog.deleteMany({});
+  await Blog.insertMany(helper.initialBlogs);
 
-  let blogObject = new Blog(helper.initialBlogs[0]);
+  /*let blogObject = new Blog(helper.initialBlogs[0]);
   await blogObject.save();
 
   blogObject = new Blog(helper.initialBlogs[1]);
-  await blogObject.save();
+  await blogObject.save();*/
 });
 
 test('blogs are returned as json', async () => {
@@ -92,6 +93,24 @@ test('a title or url is missing', async () => {
 
   expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
 });
+
+test('a specific blog can be deleted if id is valid', async () => {
+  const blogsAtStart = await helper.blogsInDatabase();
+  const blogToDelete = blogsAtStart[0];
+
+  await api
+    .delete(`/api/blogs/${blogToDelete.id}`)
+    .expect(204);
+
+  const blogsAtEnd = await helper.blogsInDatabase();
+
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1);
+
+  const blogs = blogsAtEnd.map(res => res.title);
+
+  expect(blogs).not.toContain(blogToDelete.title);
+});
+
 
 afterAll(async () => {
   await mongoose.connection.close();

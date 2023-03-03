@@ -15,9 +15,23 @@ const initialBlogs = [
   }
 ];
 
+const nonExistingId = async () => {
+  const blog = new Blog({
+    title: 'React patterns',
+    author: 'Michael Chan',
+    url: 'https://reactpatterns.com/',
+    likes: 7,
+  });
+
+  await blog.save();
+  await blog.remove();
+
+  return blog.id.toString();
+};
+
 const blogsInDatabase = async () => {
   const blogs = await Blog.find({});
   return blogs.map(blog => blog.toJSON());
 };
 
-module.exports = { initialBlogs, blogsInDatabase };
+module.exports = { nonExistingId, initialBlogs, blogsInDatabase };
