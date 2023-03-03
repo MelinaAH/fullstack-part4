@@ -22,10 +22,6 @@ test('blogs are returned as json', async () => {
     .expect('Content-Type', /application\/json/);
 });
 
-afterAll(async () => {
-  await mongoose.connection.close();
-});
-
 test('there are two blogs', async () => {
   const response = await api.get('/api/blogs');
 
@@ -95,4 +91,8 @@ test('a title or url is missing', async () => {
   const blogsAtEnd = await helper.blogsInDatabase();
 
   expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
+});
+
+afterAll(async () => {
+  await mongoose.connection.close();
 });
