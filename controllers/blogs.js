@@ -28,8 +28,6 @@ blogsRouter.post('/', async (request, response, next) => {
   catch (expectation) {
     next(expectation);
   }
-
-  // catch(error => logger.error(error.message));
 });
 
 module.exports = blogsRouter;

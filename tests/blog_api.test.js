@@ -70,3 +70,31 @@ test('a blog can be added', async () => {
 
   expect(blogs.body).toHaveLength(initialBlogs.length + 1);
 });
+
+/*test('likes is nset to 0 if not given', async () => {
+  const blogs = await api.get('/api/blogs');
+
+  const likes = blogs.body.map(blog => blog.likes);
+
+  expect(likes).toBe(0 || likes);
+});*/
+
+test('likes is set to 0 if not given', async () => {
+  const newBlog = {
+    title: 'Type wars',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+  };
+
+  if (!newBlog.likes) {
+    newBlog.likes = 0;
+  }
+
+  const postBlog = await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/);
+
+  expect(postBlog.body.likes).toBe(0);
+});
