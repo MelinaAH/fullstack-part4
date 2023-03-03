@@ -14,6 +14,14 @@ blogsRouter.get('/', async (request, response, next) => {
 });
 
 blogsRouter.post('/', async (request, response, next) => {
+  const body = request.body;
+
+  if (!body.title || !body.url) {
+    return response.status(400).json({
+      error: 'Bad request'
+    });
+  }
+
   const blog = new Blog({
     title: request.body.title,
     author: request.body.author,
