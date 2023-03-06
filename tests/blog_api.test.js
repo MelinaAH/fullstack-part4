@@ -111,6 +111,30 @@ test('a specific blog can be deleted if id is valid', async () => {
   expect(blogs).not.toContain(blogToDelete.title);
 });
 
+test('a blog can be updated', async () => {
+  const blogsAtStart = await helper.blogsInDatabase();
+  const blogToUpdate = blogsAtStart[0];
+
+  const updatedBlog = {
+    title: 'Juoksijan korvaava harjoittelu',
+    author: 'Johanna Sällinen',
+    url: 'https://juoksija.fi/lenkkarit-solmussa/juoksijan-korvaava-harjoittelu-lenkkarit-solmussa/',
+    likes: 8
+  };
+
+  await api
+    .put(`/api/blogs/${blogToUpdate.id}`)
+    .send(updatedBlog)
+    .expect(200)
+    .expect('Content-Type', /application\/json/);
+
+  const blogsAtEnd = await helper.blogsInDatabase();
+  expect(blogsAtEnd.length).toBe(helper.initialBlogs.length);
+
+  const updatedBlogInDatabase = blogsAtEnd.find(blog => blog.id === blogToUpdate.id);
+  expect(updatedBlogInDatabase.likes).toBe(8);
+});
+
 
 afterAll(async () => {
   await mongoose.connection.close();
