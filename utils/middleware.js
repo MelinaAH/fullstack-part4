@@ -36,15 +36,20 @@ const tokenExtractor = (request, response, next) => {
   if (authorization && authorization.startsWith('Bearer ')) {
     request.token = authorization.replace('Bearer ', '');
   }
+  else {
+    request.token = null;
+  }
 
   next();
 };
 
 const userExtractor = async (request, response, next) => {
-  const decodedToken = jwt.verify(request.token, process.env.SECRET);
+  if (request.token) {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET);
 
-  if (decodedToken && decodedToken.id) {
-    request.user = await User.findById(decodedToken.id);
+    if (decodedToken && decodedToken.id) {
+      request.user = await User.findById(decodedToken.id);
+    }
   }
 
   next();

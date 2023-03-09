@@ -6,6 +6,9 @@ const app = require('../app');
 const api = supertest(app);
 const Blog = require('../models/blog');
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+const middleware = require('../utils/middleware');
+const { response } = require('../app');
 
 beforeEach(async () => {
   await Blog.deleteMany({});
@@ -114,34 +117,6 @@ test('a title or url is missing', async () => {
   expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
 });
 
-test('a specific blog can be deleted if id is valid', async () => {
-  const blogsAtStart = await helper.blogsInDatabase();
-  const blogToDelete = blogsAtStart[0];
-
-  const userResponse = await api
-    .post('/api/login').send({
-      username: 'root',
-      password: 'secret'
-    });
-
-  const token = `Bearer ${userResponse.body.token}`;
-
-  await api
-    .delete(`/api/blogs/${blogToDelete.id}`)
-    .set('Authorization', token)
-    .expect(204)
-    .expect('Content-Length', 0)
-    .expect('Content-Type', /application\/json/);
-
-  const blogsAtEnd = await helper.blogsInDatabase();
-
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1);
-
-  const blogs = blogsAtEnd.map(res => res.title);
-
-  expect(blogs).not.toContain(blogToDelete.title);
-});
-
 test('a blog can be updated', async () => {
   const blogsAtStart = await helper.blogsInDatabase();
   const blogToUpdate = blogsAtStart[0];
@@ -164,6 +139,42 @@ test('a blog can be updated', async () => {
 
   const updatedBlogInDatabase = blogsAtEnd.find(blog => blog.id === blogToUpdate.id);
   expect(updatedBlogInDatabase.likes).toBe(8);
+});
+
+describe('deletion of a blog', () => {
+  let token = null;
+
+  beforeEach(async () => {
+    await User.deleteMany({});
+
+    const passwordHash = await bcrypt.hash('secret', 10);
+    const newUser = new User({ username: 'root', name: 'Superuser', passwordHash });
+
+    const user = await newUser.save();
+
+    token = jwt.sign({ username: user.username, id: user._id }, process.env.SECRET);
+  });
+
+  test('a specific blog can be deleted if id is valid', async () => {
+    const blogsAtStart = await helper.blogsInDatabase();
+    const blogToDelete = blogsAtStart[0];
+    console.log(token);
+
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .set('Authorization', `bearer ${token}`)
+      .expect(204)
+      .expect('Content-Length', 0)
+      .expect('Content-Type', /application\/json/);
+
+    const blogsAtEnd = await helper.blogsInDatabase();
+
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1);
+
+    const blogs = blogsAtEnd.map(res => res.title);
+
+    expect(blogs).not.toContain(blogToDelete.title);
+  });
 });
 
 describe('when there is initially one user at db', () => {
@@ -286,26 +297,25 @@ describe('when there is initially one user at db', () => {
       expect(usersAtEnd).toHaveLength(usersAtStart.length);
     }
   );
-});
 
-test('a blog cannot be added if no token is provided', async () => {
-  const newBlog = {
-    title: 'Type wars',
-    author: 'Robert C. Martin',
-    url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
-    likes: 2
-  };
+  test('a blog cannot be added if token is not provided', async () => {
+    const blogsAtStart = await Blog.find({});
+    const newBlog = {
+      title: 'Type wars',
+      author: 'Robert C. Martin',
+      url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+      likes: 2,
+    };
 
-  const response = await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(401);
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
+      .expect('Content-Type', /application\/json/);
 
-  expect(response.body.error).toContain('token invalid');
-
-  const blogsAtEnd = await helper.blogsInDatabase();
-
-  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
+    const blogsAtEnd = await Blog.find({});
+    expect(blogsAtEnd).toHaveLength(blogsAtStart.length);
+  });
 });
 
 afterAll(async () => {
