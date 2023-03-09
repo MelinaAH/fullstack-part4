@@ -41,8 +41,16 @@ test('a blog can be added', async () => {
     likes: 2
   };
 
+  const userResponse = await api.post('/api/login').send({
+    username: 'root',
+    password: 'secret'
+  });
+
+  const token = `Bearer ${userResponse.body.token}`;
+
   await api
     .post('/api/blogs')
+    .set('Authorization', token)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/);
@@ -59,12 +67,20 @@ test('likes is set to 0 if not given', async () => {
     url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
   };
 
+  const userResponse = await api.post('/api/login').send({
+    username: 'root',
+    password: 'secret'
+  });
+
+  const token = `Bearer ${userResponse.body.token}`;
+
   if (!newBlog.likes) {
     newBlog.likes = 0;
   }
 
   const postBlog = await api
     .post('/api/blogs')
+    .set('Authorization', token)
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json/);
@@ -80,8 +96,16 @@ test('a title or url is missing', async () => {
     likes: 2
   };
 
+  const userResponse = await api.post('/api/login').send({
+    username: 'root',
+    password: 'secret'
+  });
+
+  const token = `Bearer ${userResponse.body.token}`;
+
   await api
     .post('/api/blogs')
+    .set('Authorization', token)
     .send(newBlog)
     .expect(400);
 
@@ -94,9 +118,20 @@ test('a specific blog can be deleted if id is valid', async () => {
   const blogsAtStart = await helper.blogsInDatabase();
   const blogToDelete = blogsAtStart[0];
 
+  const userResponse = await api
+    .post('/api/login').send({
+      username: 'root',
+      password: 'secret'
+    });
+
+  const token = `Bearer ${userResponse.body.token}`;
+
   await api
     .delete(`/api/blogs/${blogToDelete.id}`)
-    .expect(204);
+    .set('Authorization', token)
+    .expect(204)
+    .expect('Content-Length', 0)
+    .expect('Content-Type', /application\/json/);
 
   const blogsAtEnd = await helper.blogsInDatabase();
 
@@ -251,6 +286,26 @@ describe('when there is initially one user at db', () => {
       expect(usersAtEnd).toHaveLength(usersAtStart.length);
     }
   );
+});
+
+test('a blog cannot be added if no token is provided', async () => {
+  const newBlog = {
+    title: 'Type wars',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html',
+    likes: 2
+  };
+
+  const response = await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(401);
+
+  expect(response.body.error).toContain('token invalid');
+
+  const blogsAtEnd = await helper.blogsInDatabase();
+
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
 });
 
 afterAll(async () => {
